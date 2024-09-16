@@ -1,0 +1,6 @@
+@PbDori_HostAddress = http://localhost:5064
+
+GET {{PbDori_HostAddress}}/GetStrategyResults/
+Accept: application/json
+
+###

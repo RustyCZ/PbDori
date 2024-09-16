@@ -1,0 +1,24 @@
+version: '3.4'
+
+services:
+  pbdori:
+    image: ${DOCKER_REGISTRY-}pbdori
+    user: root
+    build:
+      context: .
+      dockerfile: PbDori/Dockerfile
+    ports:
+        - 8093:8080
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./PbDori/Data:/app/Data
+    environment:
+    - PBDORI_PbDori__ApiBasicAuth__Username=
+    - PBDORI_PbDori__ApiBasicAuth__Password=
+    - PBDORI_PbDori__Strategies__0__Name=Test
+    - PBDORI_PbDori__Strategies__0__BackTestDuration=30.00:00:00
+    - PBDORI_PbDori__Strategies__0__LaunchTime=90.00:00:00
+    - PBDORI_PbDori__Strategies__0__TopDailyMedianVolumePercentile=0.15
+    - PBDORI_PbDori__Strategies__0__PbSymbolConfig=test.json
+    # On Windows modify to absolute path 
+    - PBDORI_PbDori__PbFileSystem__HostDataDir=${PWD}/PbDori/Data

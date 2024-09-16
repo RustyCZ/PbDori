@@ -4,6 +4,10 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 # User-specific files
+PbDori/Data/passivbot/historical_data
+PbDori/Data/passivbot/backtests
+PbDori/Data/passivbot/configs/backtests
+PbDori/Data/passivbot/tmp
 *.rsuser
 *.suo
 *.user

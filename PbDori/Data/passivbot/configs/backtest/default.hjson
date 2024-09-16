@@ -1,0 +1,71 @@
+{
+  market_type: futures
+  user: bybit_01
+  symbols:
+  [
+    BTCUSDT
+    ETHUSDT
+    SOLUSDT
+    1000PEPEUSDT
+    XRPUSDT
+    WIFUSDT
+    POPCATUSDT
+    DOGEUSDT
+    SUIUSDT
+    TONUSDT
+    NOTUSDT
+    NEARUSDT
+    ORDIUSDT
+    AVAXUSDT
+    FTMUSDT
+    TIAUSDT
+    RAREUSDT
+    WLDUSDT
+    CRVUSDT
+    ONDOUSDT
+    10000SATSUSDT
+    ADAUSDT
+    BNBUSDT
+    MATICUSDT
+    LINKUSDT
+    AAVEUSDT
+    GALAUSDT
+    PEOPLEUSDT
+    MEWUSDT
+    TRBUSDT
+    INJUSDT
+    SEIUSDT
+    APTUSDT
+    1000RATSUSDT
+    ENAUSDT
+    1000BONKUSDT
+    OPUSDT
+    ARBUSDT
+    BRETTUSDT
+    SHIB1000USDT
+    STRKUSDT
+    BCHUSDT
+    LTCUSDT
+    TAOUSDT
+    PENDLEUSDT
+    STXUSDT
+    DOTUSDT
+    EOSUSDT
+    1000000MOGUSDT
+    ATOMUSDT
+    1000FLOKIUSDT
+    ZETAUSDT
+    JASMYUSDT
+  ]
+  latency_simulation_ms: 1000
+  starting_balance: 100000
+  start_date: 2024-08-04
+  end_date: 2024-09-03
+  slim_analysis: true
+  base_dir: backtests
+  ohlcv: true
+  adg_n_subdivisions: 1
+  enable_interactive_plot: false
+  plot_theme: light
+  plot_candles_interval: 1m
+}
