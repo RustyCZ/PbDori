@@ -8,6 +8,7 @@ PbDori/Data/passivbot/historical_data
 PbDori/Data/passivbot/backtests
 PbDori/Data/passivbot/configs/backtests
 PbDori/Data/passivbot/tmp
+PbDori/Data/Results
 *.rsuser
 *.suo
 *.user
