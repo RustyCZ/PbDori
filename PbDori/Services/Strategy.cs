@@ -11,4 +11,8 @@ public class Strategy
     public double TopDailyMedianVolumePercentile { get; set; } = 0.15;
 
     public string PbSymbolConfig { get; set; } = string.Empty;
+
+    public bool EnableMarketCapFilter { get; set; }
+
+    public double MinMarketCapRatio { get; set; } = 0.0003;
 }

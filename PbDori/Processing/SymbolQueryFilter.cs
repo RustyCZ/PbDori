@@ -9,4 +9,8 @@ public class SymbolQueryFilter
     public DateTime End { get; set; }
 
     public double TopDailyMedianVolumePercentile { get; set; } = 0.25;
+
+    public bool EnableMarketCapFilter { get; set; }
+
+    public double MinMarketCapRatio { get; set; } = 0.0003;
 }

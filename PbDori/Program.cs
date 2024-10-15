@@ -2,6 +2,7 @@
 using AspNetCore.Authentication.Basic;
 using Microsoft.AspNetCore.Authorization;
 using PbDori.Authentication;
+using PbDori.CoinMarketCap;
 using PbDori.Helpers;
 using PbDori.PbLifeCycle;
 using PbDori.Processing;
@@ -68,6 +69,13 @@ public class Program
             x.Interval = TimeSpan.FromHours(2);
             x.MaxExecutionDuration = TimeSpan.FromHours(3);
             x.Strategies = configuration.Strategies;
+        });
+        builder.Services.AddSingleton<ICoinMarketCapClient, CoinMarketCapClient>();
+        builder.Services.AddOptions<CoinMarketCapClientOptions>().Configure(x =>
+        {
+            x.ApiKey = configuration.CoinMarketCap.ApiKey;
+            x.CacheDuration = configuration.CoinMarketCap.CacheDuration;
+            x.CoinLimit = configuration.CoinMarketCap.CoinLimit;
         });
         builder.Services.AddLogging(options =>
         {

@@ -81,7 +81,9 @@ public class BackTestService : BackgroundService
             Start = endTime - strategy.BackTestDuration,
             End = endTime,
             MinLaunchTime = endTime - strategy.LaunchTime,
-            TopDailyMedianVolumePercentile = strategy.TopDailyMedianVolumePercentile
+            TopDailyMedianVolumePercentile = strategy.TopDailyMedianVolumePercentile,
+            EnableMarketCapFilter = strategy.EnableMarketCapFilter,
+            MinMarketCapRatio = strategy.MinMarketCapRatio,
         };
         var symbolAnalysisData = await m_symbolDataProvider.GetSymbolsAsync(symbolFilter, cancel);
         var symbols = symbolAnalysisData.Select(x => x.Symbol).ToArray();

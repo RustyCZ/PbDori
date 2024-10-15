@@ -2,6 +2,8 @@
 using Bybit.Net.Enums;
 using Bybit.Net.Interfaces.Clients;
 using Bybit.Net.Objects.Models.V5;
+using CryptoExchange.Net.CommonObjects;
+using PbDori.CoinMarketCap;
 using PbDori.Model;
 
 namespace PbDori.Processing;
@@ -9,10 +11,12 @@ namespace PbDori.Processing;
 public class BybitSymbolDataProvider : ISymbolDataProvider
 {
     private readonly IBybitRestClient m_bybitRestClient;
+    private readonly ICoinMarketCapClient m_coinMarketCapClient;
 
-    public BybitSymbolDataProvider(IBybitRestClient bybitRestClient)
+    public BybitSymbolDataProvider(IBybitRestClient bybitRestClient, ICoinMarketCapClient coinMarketCapClient)
     {
         m_bybitRestClient = bybitRestClient;
+        m_coinMarketCapClient = coinMarketCapClient;
     }
 
     public async Task<IReadOnlyList<SymbolAnalysis>> GetSymbolsAsync(SymbolQueryFilter filter, CancellationToken cancel)
@@ -32,6 +36,14 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
         if (tickerRes.Data == null)
             throw new InvalidOperationException("Failed to get tickers: no data returned");
         var tickersBySymbol = tickerRes.Data.List.ToDictionary(x => x.Symbol);
+        MarketData? marketData = null;
+        if (filter.EnableMarketCapFilter)
+        {
+            marketData = await m_coinMarketCapClient.GetMarketDataAsync(cancel);
+            if (marketData == null)
+                throw new InvalidOperationException("Failed to get market data");
+        }
+            
         while (true)
         {
             var symbolsRes = await m_bybitRestClient.V5Api.ExchangeData.GetLinearInverseSymbolsAsync(Category.Linear, null, null,
@@ -79,9 +91,36 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
             percentileCount = 1;
         symbolsData = symbolsData
             .OrderByDescending(x => x.MedianVolume)
-            .Take(percentileCount).ToList();
+            .Take(percentileCount)
+            .Where(x => !IsFilteredByMarketCap(marketData, x.Symbol, filter))
+            .ToList();
 
         return symbolsData;
+    }
+
+    private bool IsFilteredByMarketCap(MarketData? marketData, string symbol, SymbolQueryFilter filter)
+    {
+        if (!filter.EnableMarketCapFilter)
+            return false;
+        string normalizedCoin = NormalizeCoin(symbol);
+        if (!marketData!.MarketCapRatioBySymbol.TryGetValue(normalizedCoin, out var marketCapRatio))
+            return true;
+        return marketCapRatio < filter.MinMarketCapRatio;
+    }
+
+    private string NormalizeCoin(string coin)
+    {
+        var normalizedCoin = coin
+            .Replace("10000000000", "")
+            .Replace("1000000000", "")
+            .Replace("100000000", "")
+            .Replace("10000000", "")
+            .Replace("1000000", "")
+            .Replace("100000", "")
+            .Replace("10000", "")
+            .Replace("1000", "")
+            .Replace("USDT", "");
+        return normalizedCoin;
     }
 
     private async Task<HashSet<string>> QueryDelistingsAsync(CancellationToken cancel)
