@@ -2,7 +2,6 @@
 using Bybit.Net.Enums;
 using Bybit.Net.Interfaces.Clients;
 using Bybit.Net.Objects.Models.V5;
-using CryptoExchange.Net.CommonObjects;
 using PbDori.CoinMarketCap;
 using PbDori.Model;
 
@@ -131,20 +130,27 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
         List<Regex> patterns =
         [
             new Regex("^Delisting of (?<symbol>.+)USDT Perpetual Contract$"),
-            new Regex("^Delisting  of (?<symbol>.+)USDT Perpetual Contract$"),
             new Regex("^Delisting of (?<symbol>.+) Perpetual Contracts$")
         ];
         HashSet<string> delistings = new HashSet<string>();
-        TimeSpan delistingValidityDuration = TimeSpan.FromDays(30);
+        TimeSpan delistingValidityDuration = TimeSpan.FromDays(60);
         DateTime delistingExpiration = DateTime.UtcNow - delistingValidityDuration;
+        List<string> normalizedTitles = new List<string>();
+        foreach (var announcement in announcements.Data.List)
+        {
+            if (announcement.Timestamp < delistingExpiration)
+                continue;
+            if (string.IsNullOrWhiteSpace(announcement.Title))
+                continue;
+            // replace white space with single space
+            var normalizedTitle = Regex.Replace(announcement.Title, @"\s+", " ");
+            normalizedTitles.Add(normalizedTitle);
+        }
         foreach (var pattern in patterns)
         {
-            var matches = announcements.Data?.List
-                .Where(x => !string.IsNullOrWhiteSpace(x.Title) && x.Timestamp > delistingExpiration)
-                .Select(x => pattern.Match(x.Title))
+            var matches = normalizedTitles
+                .Select(x => pattern.Match(x))
                 .Where(x => x.Success);
-            if (matches == null)
-                continue;
             foreach (Match match in matches)
             {
                 var symbol = match.Groups["symbol"].Value;
@@ -156,10 +162,13 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
                     var trimmed = s.Trim();
                     if(string.IsNullOrWhiteSpace(trimmed))
                         continue;
-                    delistings.Add(trimmed + "USDT");
+                    if (!trimmed.EndsWith("USDT"))
+                        trimmed += "USDT";
+                    delistings.Add(trimmed);
                 }
             }
         }
+
         return delistings;
     }
 
