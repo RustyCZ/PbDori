@@ -69,6 +69,8 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
                     continue;
                 if (delistings.Contains(symbol.Name))
                     continue;
+                if (filter.EnableMarketCapFilter && IsFilteredByNotice(marketData, symbol.Name))
+                    continue;
                 symbols.Add(symbol);
             }
             if (string.IsNullOrWhiteSpace(symbolsRes.Data.NextPageCursor))
@@ -105,6 +107,14 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
         if (!marketData!.MarketCapRatioBySymbol.TryGetValue(normalizedCoin, out var marketCapRatio))
             return true;
         return marketCapRatio < filter.MinMarketCapRatio;
+    }
+
+    private bool IsFilteredByNotice(MarketData? marketData, string symbol)
+    {
+        string normalizedCoin = NormalizeCoin(symbol);
+        if (!marketData!.NoticeBySymbol.TryGetValue(normalizedCoin, out var notice))
+            return false; // do not filter if notice is not found
+        return !string.IsNullOrWhiteSpace(notice);
     }
 
     private string NormalizeCoin(string coin)

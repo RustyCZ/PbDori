@@ -11,5 +11,7 @@ public class MarketData
     /// </summary>
     public required Dictionary<string, double> MarketCapRatioBySymbol { get; set; }
 
+    public required Dictionary<string, string> NoticeBySymbol { get; set; }
+
     public DateTime LastUpdated { get; set; }
 }

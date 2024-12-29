@@ -40,21 +40,24 @@ public class CoinMarketCapClient : ICoinMarketCapClient
             {
                 m_logger.LogInformation("Getting market data");
                 var totalMarketCapTask = GetTotalMarketCapAsync(cancel);
-                var marketCapBySymbolTask = GetMarketCapBySymbolAsync(m_options.Value.CoinLimit, cancel);
-                await Task.WhenAll(totalMarketCapTask, marketCapBySymbolTask);
-                var marketCapBySymbol = marketCapBySymbolTask.Result;
+                var symbolInfoTask = GetSymbolInfoAsync(m_options.Value.CoinLimit, cancel);
+                await Task.WhenAll(totalMarketCapTask, symbolInfoTask);
+                var symbolInfo = symbolInfoTask.Result;
                 var totalMarketCap = totalMarketCapTask.Result;
-                if (totalMarketCap == null || marketCapBySymbol.Count == 0)
+                if (totalMarketCap == null || symbolInfo.Count == 0)
                 {
                     m_logger.LogWarning("Failed to get market data");
                     return m_marketData;
                 }
+
+                var marketCapBySymbol = symbolInfo.Values.ToDictionary(x => x.Symbol, x => x.MarketCap);
                 m_marketData = new MarketData
                 {
                     TotalMarketCap = totalMarketCapTask.Result,
                     MarketCapBySymbol = marketCapBySymbol,
                     LastUpdated = DateTime.UtcNow,
-                    MarketCapRatioBySymbol = marketCapBySymbol.ToDictionary(x => x.Key, x => x.Value / totalMarketCap.Value)
+                    MarketCapRatioBySymbol = marketCapBySymbol.ToDictionary(x => x.Key, x => x.Value / totalMarketCap.Value),
+                    NoticeBySymbol = symbolInfo.ToDictionary(x => x.Key, x => x.Value.Notice)
                 };
                 m_logger.LogInformation("Market data updated");
                 m_logger.LogInformation("Total market cap: {TotalMarketCap}", m_marketData.TotalMarketCap);
@@ -83,7 +86,7 @@ public class CoinMarketCapClient : ICoinMarketCapClient
         return globalMetricsResult?.Data?.Quote?.Usd?.TotalMarketCap;
     }
 
-    public async Task<Dictionary<string, double>> GetMarketCapBySymbolAsync(int limit, CancellationToken cancel = default)
+    public async Task<Dictionary<string, SymbolInfo>> GetSymbolInfoAsync(int limit, CancellationToken cancel = default)
     {
         const string listingUrl = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
         const string sort = "market_cap";
@@ -96,11 +99,28 @@ public class CoinMarketCapClient : ICoinMarketCapClient
         var result = await response.Content.ReadAsStringAsync(cancel);
         var listingsResult = JsonSerializer.Deserialize<ListingsResult>(result);
         if (listingsResult?.Data == null)
-            return new Dictionary<string, double>();
+            return new Dictionary<string, SymbolInfo>();
         var marketCapBySymbol = listingsResult.Data
             .Where(x => x.Quote?.Usd?.MarketCap != null && !string.IsNullOrWhiteSpace(x.Symbol))
             .DistinctBy(x => x.Symbol!)
-            .ToDictionary(x => x.Symbol!, x => x.Quote!.Usd!.MarketCap!.Value);
+            .ToDictionary(x => x.Symbol!, x => new SymbolInfo(x.Symbol!, x.Quote!.Usd!.MarketCap!.Value, string.Empty));
+
+        const string metaDataUrl = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/info";
+        string ids = string.Join(',', listingsResult.Data.Select(x => x.Id));
+        url = $"{metaDataUrl}?id={ids}";
+        request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add(ApiKeyHeader, m_options.Value.ApiKey);
+        response = await m_client.SendAsync(request, cancel);
+        response.EnsureSuccessStatusCode();
+        result = await response.Content.ReadAsStringAsync(cancel);
+        CryptoCurrencyInfoResult? cryptoCurrencyInfoResult = JsonSerializer.Deserialize<CryptoCurrencyInfoResult>(result);
+        if (cryptoCurrencyInfoResult?.Data == null)
+            return marketCapBySymbol;
+        foreach (var (_, info) in cryptoCurrencyInfoResult.Data)
+        {
+            if (marketCapBySymbol.TryGetValue(info.Symbol, out var symbolInfo))
+                marketCapBySymbol[info.Symbol] = new SymbolInfo(info.Symbol, symbolInfo.MarketCap, info.Notice);
+        }
         return marketCapBySymbol;
     }
 }
