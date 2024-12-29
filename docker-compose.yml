@@ -23,5 +23,6 @@ services:
     - PBDORI_PbDori__Strategies__0__EnableMarketCapFilter=true
     - PBDORI_PbDori__Strategies__0__PbSymbolConfig=test.json
     - PBDORI_PbDori__CoinMarketCap__ApiKey=
+    - PBDORI_PbDori__Blacklist__Symbols__0=
     # On Windows modify to absolute path 
     - PBDORI_PbDori__PbFileSystem__HostDataDir=${PWD}/PbDori/Data

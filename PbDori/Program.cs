@@ -77,6 +77,11 @@ public class Program
             x.CacheDuration = configuration.CoinMarketCap.CacheDuration;
             x.CoinLimit = configuration.CoinMarketCap.CoinLimit;
         });
+        builder.Services.AddSingleton<IBlacklistedSymbolsProvider, ConfiguredBlacklistedSymbolsProvider>();
+        builder.Services.AddOptions<ConfiguredBlacklistedSymbolsProviderOptions>().Configure(x =>
+        {
+            x.BlacklistedSymbols = configuration.Blacklist.Symbols;
+        });
         builder.Services.AddLogging(options =>
         {
             options.AddSimpleConsole(o =>

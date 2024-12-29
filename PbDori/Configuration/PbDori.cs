@@ -9,4 +9,5 @@ public class PbDori
     public BackTestResultsStorage BackTestResultsStorage { get; set; } = new BackTestResultsStorage();
     public PbFileSystem PbFileSystem { get; set; } = new PbFileSystem();
     public CoinMarketCap CoinMarketCap { get; set; } = new CoinMarketCap();
+    public Blacklist Blacklist { get; set; } = new Blacklist();
 }

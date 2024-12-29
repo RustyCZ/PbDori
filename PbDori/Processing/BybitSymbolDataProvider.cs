@@ -11,15 +11,23 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
 {
     private readonly IBybitRestClient m_bybitRestClient;
     private readonly ICoinMarketCapClient m_coinMarketCapClient;
+    private readonly IBlacklistedSymbolsProvider m_blacklistedSymbolsProvider;
 
-    public BybitSymbolDataProvider(IBybitRestClient bybitRestClient, ICoinMarketCapClient coinMarketCapClient)
+    public BybitSymbolDataProvider(IBybitRestClient bybitRestClient, 
+        ICoinMarketCapClient coinMarketCapClient, 
+        IBlacklistedSymbolsProvider blacklistedSymbolsProvider)
     {
         m_bybitRestClient = bybitRestClient;
         m_coinMarketCapClient = coinMarketCapClient;
+        m_blacklistedSymbolsProvider = blacklistedSymbolsProvider;
     }
 
     public async Task<IReadOnlyList<SymbolAnalysis>> GetSymbolsAsync(SymbolQueryFilter filter, CancellationToken cancel)
     {
+        var blacklist = await m_blacklistedSymbolsProvider.GetBlacklistedSymbolsAsync(cancel);
+        var blacklistSet = blacklist
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(NormalizeCoin).ToHashSet();
         var delistings = await QueryDelistingsAsync(cancel);
         var symbolsData = new List<SymbolAnalysis>();
         string? cursor = null;
@@ -71,6 +79,8 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
                     continue;
                 if (filter.EnableMarketCapFilter && IsFilteredByNotice(marketData, symbol.Name))
                     continue;
+                if (IsBlackListed(symbol.Name, blacklistSet))
+                    continue;
                 symbols.Add(symbol);
             }
             if (string.IsNullOrWhiteSpace(symbolsRes.Data.NextPageCursor))
@@ -115,6 +125,13 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
         if (!marketData!.NoticeBySymbol.TryGetValue(normalizedCoin, out var notice))
             return false; // do not filter if notice is not found
         return !string.IsNullOrWhiteSpace(notice);
+    }
+
+    private bool IsBlackListed(string symbol, HashSet<string> blacklist)
+    {
+        string normalizedCoin = NormalizeCoin(symbol);
+        bool blacklisted = blacklist.Contains(normalizedCoin);
+        return blacklisted;
     }
 
     private string NormalizeCoin(string coin)
