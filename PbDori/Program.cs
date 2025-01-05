@@ -82,6 +82,16 @@ public class Program
         {
             x.BlacklistedSymbols = configuration.Blacklist.Symbols;
         });
+        builder.Services.AddSingleton<IMarketTrendProcessor, MarketTrendProcessor>();
+        if (configuration.MarketTrend.Enable)
+        {
+            builder.Services.AddHostedService<MarketTrendService>();
+            builder.Services.AddOptions<MarketTrendServiceOptions>().Configure(x =>
+            {
+                x.Interval = TimeSpan.FromHours(1);
+            });
+        }
+        builder.Services.AddSingleton<IMarketTrendResultRepository, InMemoryIMarketTrendResultRepository>();
         builder.Services.AddLogging(options =>
         {
             options.AddSimpleConsole(o =>

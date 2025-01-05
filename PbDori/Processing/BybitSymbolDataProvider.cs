@@ -27,7 +27,7 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
         var blacklist = await m_blacklistedSymbolsProvider.GetBlacklistedSymbolsAsync(cancel);
         var blacklistSet = blacklist
             .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(NormalizeCoin).ToHashSet();
+            .Select(SymbolHelpers.NormalizeCoin).ToHashSet();
         var delistings = await QueryDelistingsAsync(cancel);
         var symbolsData = new List<SymbolAnalysis>();
         string? cursor = null;
@@ -63,9 +63,9 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
             {
                 if (symbol.Status != SymbolStatus.Trading)
                     continue;
-                if (symbol.QuoteAsset != "USDT")
+                if (!SymbolHelpers.IsTradedQuotedAsset(symbol.QuoteAsset))
                     continue;
-                if (symbol.Name == "USDCUSDT")
+                if (SymbolHelpers.IsStableCoinPair(symbol.Name))
                     continue;
                 if (symbol.LaunchTime > filter.MinLaunchTime)
                     continue;
@@ -113,7 +113,7 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
     {
         if (!filter.EnableMarketCapFilter)
             return false;
-        string normalizedCoin = NormalizeCoin(symbol);
+        string normalizedCoin = SymbolHelpers.NormalizeCoin(symbol);
         if (!marketData!.MarketCapRatioBySymbol.TryGetValue(normalizedCoin, out var marketCapRatio))
             return true;
         return marketCapRatio < filter.MinMarketCapRatio;
@@ -121,7 +121,7 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
 
     private bool IsFilteredByNotice(MarketData? marketData, string symbol)
     {
-        string normalizedCoin = NormalizeCoin(symbol);
+        string normalizedCoin = SymbolHelpers.NormalizeCoin(symbol);
         if (!marketData!.NoticeBySymbol.TryGetValue(normalizedCoin, out var notice))
             return false; // do not filter if notice is not found
         return !string.IsNullOrWhiteSpace(notice);
@@ -129,24 +129,9 @@ public class BybitSymbolDataProvider : ISymbolDataProvider
 
     private bool IsBlackListed(string symbol, HashSet<string> blacklist)
     {
-        string normalizedCoin = NormalizeCoin(symbol);
+        string normalizedCoin = SymbolHelpers.NormalizeCoin(symbol);
         bool blacklisted = blacklist.Contains(normalizedCoin);
         return blacklisted;
-    }
-
-    private string NormalizeCoin(string coin)
-    {
-        var normalizedCoin = coin
-            .Replace("10000000000", "")
-            .Replace("1000000000", "")
-            .Replace("100000000", "")
-            .Replace("10000000", "")
-            .Replace("1000000", "")
-            .Replace("100000", "")
-            .Replace("10000", "")
-            .Replace("1000", "")
-            .Replace("USDT", "");
-        return normalizedCoin;
     }
 
     private async Task<HashSet<string>> QueryDelistingsAsync(CancellationToken cancel)

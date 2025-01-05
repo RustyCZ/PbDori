@@ -10,4 +10,5 @@ public class PbDori
     public PbFileSystem PbFileSystem { get; set; } = new PbFileSystem();
     public CoinMarketCap CoinMarketCap { get; set; } = new CoinMarketCap();
     public Blacklist Blacklist { get; set; } = new Blacklist();
+    public MarketTrend MarketTrend { get; set; } = new MarketTrend();
 }
