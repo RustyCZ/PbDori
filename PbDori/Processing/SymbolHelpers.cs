@@ -23,12 +23,21 @@ public static class SymbolHelpers
     {
         if (string.Equals(symbol, "USDCUSDT", StringComparison.OrdinalIgnoreCase))
             return true;
+        if (string.Equals(symbol, "FDUSDUSDT", StringComparison.OrdinalIgnoreCase))
+            return true;
         return false;
     }
 
     public static bool IsTradedQuotedAsset(string asset)
     {
         if (string.Equals(asset, "USDT", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    public static bool IsTradedSymbol(string symbol)
+    {
+        if (symbol.EndsWith("USDT", StringComparison.OrdinalIgnoreCase))
             return true;
         return false;
     }

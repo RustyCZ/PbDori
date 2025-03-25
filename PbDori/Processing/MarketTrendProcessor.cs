@@ -11,6 +11,7 @@ public class MarketTrendProcessor : IMarketTrendProcessor
     private const int TrendMinCount = 100;
     private readonly IBybitRestClient m_bybitRestClient;
     private readonly ICoinMarketCapClient m_coinMarketCapClient;
+    private readonly record struct CoinToSymbol(string Coin, string Symbol);
 
     public MarketTrendProcessor(IBybitRestClient bybitRestClient, ICoinMarketCapClient coinMarketCapClient)
     {
@@ -31,6 +32,9 @@ public class MarketTrendProcessor : IMarketTrendProcessor
         if (tickerRes.Data == null)
             throw new InvalidOperationException("Failed to get tickers: no data returned");
         var bybitSymbols = tickerRes.Data.List
+            .Where(x => SymbolHelpers.IsTradedSymbol(x.Symbol))
+            .Select(x => new CoinToSymbol(SymbolHelpers.NormalizeCoin(x.Symbol), x.Symbol))
+            .DistinctBy(x => x.Coin)
             .ToDictionary(x => SymbolHelpers.NormalizeCoin(x.Symbol), x => x.Symbol);
         var coinMarketCapData = await m_coinMarketCapClient.GetMarketDataAsync(cancel);
         if (coinMarketCapData == null)
