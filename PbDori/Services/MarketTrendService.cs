@@ -28,11 +28,30 @@ public class MarketTrendService : BackgroundService
         {
             while (!cancel.IsCancellationRequested)
             {
-                m_logger.LogInformation("Calculating market trend...");
-                var marketTrend = await m_marketTrendProcessor.CalculateMarketTrendAsync(cancel);
-                await m_marketTrendResultRepository.SaveAsync(marketTrend, cancel);
-                m_logger.LogInformation("Market trend calculated.");
-                await Task.Delay(m_options.Value.Interval, cancel);
+                var hasExecutedWithoutErrors = true;
+                try
+                {
+                    m_logger.LogInformation("Calculating market trend...");
+                    var marketTrend = await m_marketTrendProcessor.CalculateMarketTrendAsync(cancel);
+                    await m_marketTrendResultRepository.SaveAsync(marketTrend, cancel);
+                    m_logger.LogInformation("Market trend calculated.");
+                }
+                catch (Exception e)
+                {
+                    m_logger.LogWarning(e, "Error in MarketTrendService.");
+                    hasExecutedWithoutErrors = false;
+                }
+
+                if (hasExecutedWithoutErrors)
+                {
+                    m_logger.LogInformation("MarketTrendService has executed successfully.");
+                    await Task.Delay(m_options.Value.Interval, cancel);
+                }
+                else
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(1), cancel);
+                    m_logger.LogWarning("MarketTrendService has executed with errors. Repeating...");
+                }
             }
         }
         catch (OperationCanceledException)
@@ -41,7 +60,7 @@ public class MarketTrendService : BackgroundService
         }
         catch (Exception e)
         {
-            m_logger.LogWarning(e, "Error in BackTestService.");
+            m_logger.LogWarning(e, "Error in MarketTrendService.");
         }
     }
 }
